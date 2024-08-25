@@ -26,7 +26,7 @@ Clone the Repository:
 
 bash
 Copy code
-git clone https://github.com/your-username/colorclash.git
+git clone https://github.com/BOTYT-alt/colorclash.git
 Navigate to the Project Directory:
 
 bash
