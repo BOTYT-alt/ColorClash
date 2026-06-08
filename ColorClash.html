@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ColorClash</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; background: url('your-background-image.jpg') no-repeat center center fixed; background-size: cover; }
+        #gameOverScreen { 
+            position: absolute; top: 0; left: 0; 
+            width: 100vw; height: 50vh; 
+            background: rgba(0,0,0,0.7); 
+            color: white; 
+            text-align: center; 
+            display: none; 
+            padding-top: 20px;
+        }
+        #gameOverScreen button { 
+            font-size: 1em; 
+            margin-top: 20px; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 15px; 
+            background-color: gray; 
+            color: white; 
+            cursor: pointer;
+        }
+        #targetColor { 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            width: 50px; 
+            height: 50px; 
+            border-radius: 15px; 
+            background-color: transparent; 
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="gameOverScreen">
+        <h1>Game Over</h1>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+    <div id="targetColor"></div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const colors = ['red', 'blue', 'green', 'yellow'];
+        const blockWidth = 50;
+        const blockHeight = 30;
+        let circle = { x: canvas.width / 2, y: canvas.height - 50, radius: 20, color: 'gray' };
+        let blocks = [];
+        let score = 0;
+        let targetColor = 'red';
+        let gameOver = false;
+        let difficulty = 1;
+        let isDragging = false;
+        let touchStart = { x: 0, y: 0 };
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        function getRandomColor() {
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function drawCircle() {
+            ctx.beginPath();
+            ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
+            ctx.fillStyle = circle.color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawBlocks() {
+            blocks.forEach(block => {
+                ctx.fillStyle = block.color;
+                ctx.fillRect(block.x, block.y, blockWidth, blockHeight);
+            });
+        }
+
+        function drawTargetColor() {
+            const targetColorDiv = document.getElementById('targetColor');
+            targetColorDiv.style.backgroundColor = targetColor;
+        }
+
+        function drawScore() {
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+        }
+
+        function moveCircle(e) {
+            if (gameOver) return;
+            switch (e.key) {
+                case 'ArrowLeft':
+                    if (circle.x - circle.radius > 0) circle.x -= 20;
+                    break;
+                case 'ArrowRight':
+                    if (circle.x + circle.radius < canvas.width) circle.x += 20;
+                    break;
+                case 'ArrowUp':
+                    if (circle.y - circle.radius > 0) circle.y -= 20;
+                    break;
+                case 'ArrowDown':
+                    if (circle.y + circle.radius < canvas.height) circle.y += 20;
+                    break;
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (isDragging) {
+                const touch = e.touches[0];
+                circle.x = touch.clientX;
+                circle.y = touch.clientY;
+            }
+        }
+
+        function handleTouchStart(e) {
+            isDragging = true;
+            touchStart.x = e.touches[0].clientX;
+            touchStart.y = e.touches[0].clientY;
+        }
+
+        function handleTouchEnd() {
+            isDragging = false;
+        }
+
+        function updateBlocks() {
+            blocks.forEach(block => block.y += 5 + difficulty);
+            blocks = blocks.filter(block => block.y < canvas.height);
+        }
+
+        function checkCollision() {
+            blocks.forEach((block, index) => {
+                if (circle.x < block.x + blockWidth &&
+                    circle.x + circle.radius > block.x &&
+                    circle.y < block.y + blockHeight &&
+                    circle.y + circle.radius > block.y) {
+                    if (block.color === targetColor) {
+                        blocks.splice(index, 1);
+                        score += 1;
+                        targetColor = getRandomColor();
+                        difficulty += 0.1; // Increase difficulty
+                    } else {
+                        gameOver = true;
+                        document.getElementById('gameOverScreen').style.display = 'flex';
+                    }
+                }
+            });
+        }
+
+        function spawnBlock() {
+            if (Math.random() < 0.02) {
+                blocks.push({
+                    x: Math.random() * (canvas.width - blockWidth),
+                    y: -blockHeight,
+                    color: getRandomColor()
+                });
+            }
+        }
+
+        function draw() {
+            if (gameOver) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawCircle();
+            drawBlocks();
+            drawTargetColor();
+            drawScore();
+        }
+
+        function gameLoop() {
+            if (gameOver) return;
+            updateBlocks();
+            checkCollision();
+            spawnBlock();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function restartGame() {
+            gameOver = false;
+            blocks = [];
+            score = 0;
+            targetColor = getRandomColor();
+            difficulty = 1;
+            circle = { x: canvas.width / 2, y: canvas.height - 50, radius: 20, color: 'gray' };
+            document.getElementById('gameOverScreen').style.display = 'none';
+            gameLoop();
+        }
+
+        window.addEventListener('keydown', moveCircle);
+        window.addEventListener('touchstart', handleTouchStart);
+        window.addEventListener('touchmove', handleTouchMove);
+        window.addEventListener('touchend', handleTouchEnd);
+
+        restartGame();
+    </script>
+</body>
+</html>
